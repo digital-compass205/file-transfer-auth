@@ -1,0 +1,15 @@
+[Unit]
+Description=Regenerate the internal CA certificate revocation list
+Documentation=file:%h/file-transfer/README.md
+
+[Service]
+Type=oneshot
+# openssl-ca.cnf sets default_crl_days = 1, so the CRL this produces carries a
+# nextUpdate one day out. Both services fail closed once a CRL ages past that
+# (plus a grace window), which is what makes running this on a timer part of
+# the deployment rather than an optional nicety: without it, revocation
+# checking would eventually start rejecting every client.
+ExecStart=%h/file-transfer/scripts/gen-crl.sh %h/file-transfer/pki
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=%h/file-transfer/pki

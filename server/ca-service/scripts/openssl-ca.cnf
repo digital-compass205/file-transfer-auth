@@ -1,0 +1,55 @@
+# Used by `openssl ca` (via OpenSslCaInvoker / issue-token / revoke) to sign
+# and revoke short-lived client certificates. Install at
+# /etc/pki/internal-ca/openssl-ca.cnf (path referenced by
+# ca-service.properties: ca.openssl.config).
+
+[ ca ]
+default_ca = CA_default
+
+[ CA_default ]
+dir             = /etc/pki/internal-ca
+certs           = $dir/certs
+new_certs_dir   = $dir/newcerts
+database        = $dir/index.txt
+serial          = $dir/serial
+crlnumber       = $dir/crlnumber
+private_key     = $dir/private/ca.key.pem
+certificate     = $dir/certs/ca.cert.pem
+default_md      = sha256
+default_days    = 5
+default_crl_days = 1
+policy          = policy_loose
+# Never honor extensions/SANs requested in a CSR -- the section below is the
+# only source of truth for what a signed client cert can do.
+copy_extensions = none
+x509_extensions = client_cert_ext
+unique_subject  = no
+
+[ policy_loose ]
+commonName = supplied
+
+[ client_cert_ext ]
+basicConstraints     = critical, CA:FALSE
+keyUsage              = critical, digitalSignature
+extendedKeyUsage      = clientAuth
+subjectKeyIdentifier  = hash
+authorityKeyIdentifier = keyid,issuer
+
+# This file defines the client-certificate profile only. The two servers'
+# own TLS identity certificates (ca-service and file-receiver) are issued by
+# scripts/issue-server-cert.sh, which supplies their profile through
+# `openssl ca -extfile` rather than a section here. That separation is
+# deliberate on two counts:
+#
+#   - A server certificate needs a subjectAltName naming the host it serves,
+#     which cannot be a fixed constant shared by every server. Nor can it be
+#     a `$ENV::`-substituted value in this file: OpenSSL expands variables
+#     when a config is *loaded*, not when a section is used, so an unset
+#     variable here would break client-certificate signing in ca-service.
+#   - `default_days = 5` above is the client-certificate lifetime, and client
+#     certificates are the only ones anything renews automatically. Server
+#     certificates need a much longer, explicit `-days`; keeping their
+#     profile out of this file stops them from silently inheriting 5 days.
+#
+# copy_extensions = none applies to both profiles alike: a CSR never decides
+# what the certificate it asks for is allowed to do, or what it is named.

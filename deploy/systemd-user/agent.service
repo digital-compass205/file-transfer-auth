@@ -1,0 +1,22 @@
+[Unit]
+Description=File-transfer client agent (folder watch + upload + renewal)
+After=network.target
+
+[Service]
+# Enroll manually first (see README "Enrolling a client") -- this unit's
+# ExecStart intentionally has no token argument, so it never leaves a
+# one-time secret sitting in a config file. Once agent-keystore.p12 exists,
+# no token is needed for this or any future run.
+WorkingDirectory=%h/file-transfer
+ExecStart=/usr/bin/java -jar %h/file-transfer/agent.jar %h/file-transfer/agent.properties
+Restart=on-failure
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=%h/file-transfer
+# If watch.folders in agent.properties points outside ~/file-transfer, add
+# that path here too (ReadOnlyPaths is enough unless you've configured the
+# agent to move/delete source files after upload, which it doesn't by
+# default).
+
+[Install]
+WantedBy=default.target

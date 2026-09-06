@@ -1,0 +1,16 @@
+[Unit]
+Description=Internal file-transfer CA service (enrollment/renewal via openssl ca)
+After=network.target
+
+[Service]
+# Runs as whichever account's systemd --user instance loads this unit --
+# see README "Production deployment on RHEL 8". %h resolves to that
+# account's home directory.
+ExecStart=/usr/bin/java -jar %h/file-transfer/ca-service/ca-service.jar %h/file-transfer/ca-service/ca-service.properties
+Restart=on-failure
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=%h/file-transfer/pki %h/file-transfer/logs
+
+[Install]
+WantedBy=default.target

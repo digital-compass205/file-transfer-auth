@@ -1,0 +1,17 @@
+[Unit]
+Description=File-receiver service (mTLS upload endpoint)
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/java -jar %h/file-transfer/file-receiver/file-receiver.jar %h/file-transfer/file-receiver/receiver.properties
+Restart=on-failure
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=%h/file-transfer/file-receiver %h/file-transfer/logs
+# Denies this process filesystem access to the CA's private key material,
+# even though ca-service and file-receiver share the same account: it stops
+# accidents and most bugs in this service from ever touching that data.
+ReadOnlyPaths=%h/file-transfer/pki/certs %h/file-transfer/pki/crl
+
+[Install]
+WantedBy=default.target

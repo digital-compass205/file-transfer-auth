@@ -1,0 +1,16 @@
+# Build output -- regenerate with ./build.sh
+build/
+
+# Claude Code session state -- not part of the project
+.claude/
+
+# Local runtime artifacts, in case anything is run from the repo root
+*.p12
+*.jsonl
+*.jsonl.[0-9]
+ca-root.pem
+agent.properties
+ca-service.properties
+receiver.properties
+tokens.tsv
+tokens.tsv.lock
