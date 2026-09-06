@@ -6,7 +6,19 @@ After=network.target
 # Runs as whichever account's systemd --user instance loads this unit --
 # see README "Production deployment on RHEL 8". %h resolves to that
 # account's home directory.
-ExecStart=/usr/bin/java -jar %h/file-transfer/ca-service/ca-service.jar %h/file-transfer/ca-service/ca-service.properties
+#
+# JAVA_BIN defaults to RHEL 8's `alternatives`-managed /usr/bin/java, which
+# may not be 17 -- see README "Using a non-default Java". Override it
+# without editing this file by creating %h/file-transfer/java.env
+# containing e.g.
+# JAVA_BIN=/usr/lib/jvm/java-17-openjdk-17.x.x.x-x.el8.x86_64/bin/java
+#
+# ExecStart runs this through a shell because systemd does not expand
+# ${JAVA_BIN} in the executable position of a command line, only in its
+# arguments -- verified against a live systemd --user instance, not assumed.
+Environment=JAVA_BIN=/usr/bin/java
+EnvironmentFile=-%h/file-transfer/java.env
+ExecStart=/bin/sh -c 'exec "${JAVA_BIN}" -jar %h/file-transfer/ca-service/ca-service.jar %h/file-transfer/ca-service/ca-service.properties'
 Restart=on-failure
 NoNewPrivileges=true
 ProtectSystem=strict

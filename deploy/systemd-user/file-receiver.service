@@ -3,7 +3,11 @@ Description=File-receiver service (mTLS upload endpoint)
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/java -jar %h/file-transfer/file-receiver/file-receiver.jar %h/file-transfer/file-receiver/receiver.properties
+# See ca-service.service / README "Using a non-default Java" for how to
+# override JAVA_BIN without editing this file.
+Environment=JAVA_BIN=/usr/bin/java
+EnvironmentFile=-%h/file-transfer/java.env
+ExecStart=/bin/sh -c 'exec "${JAVA_BIN}" -jar %h/file-transfer/file-receiver/file-receiver.jar %h/file-transfer/file-receiver/receiver.properties'
 Restart=on-failure
 NoNewPrivileges=true
 ProtectSystem=strict

@@ -328,6 +328,29 @@ loginctl enable-linger servacc
 Check status the same way you would for a system unit, just with `--user`:
 `systemctl --user status ca-service file-receiver`, `journalctl --user -u ca-service`.
 
+### Using a non-default Java
+
+RHEL 8 manages multiple installed JDKs through `alternatives`, and its
+system default (`/usr/bin/java`) may not be 17, which this project
+requires. Find where Java 17 actually lives:
+```bash
+alternatives --display java
+```
+Two ways to point at it -- pick whichever fits:
+- **System-wide, for every user and process on the box**:
+  `sudo alternatives --config java` (and `--config javac`, needed for
+  `./build.sh`), then pick the `java-17-openjdk` entry.
+- **Just for this deployment, without changing the system default**:
+  create `~/file-transfer/java.env` (in whichever account's
+  `~/file-transfer` -- `servacc` for `ca-service`/`file-receiver`, or
+  `cliacc` for `agent`) containing one line:
+  ```
+  JAVA_BIN=/usr/lib/jvm/java-17-openjdk-17.x.x.x-x.el8.x86_64/bin/java
+  ```
+  Each unit reads this file if it's present and runs that Java instead of
+  the default `/usr/bin/java`, with no unit file to edit. Apply it with
+  `systemctl --user daemon-reload && systemctl --user restart <unit>`.
+
 ## Enrolling a client
 
 As `servacc` on the server, pointing at the deployment paths from the
@@ -362,6 +385,10 @@ systemctl --user daemon-reload
 systemctl --user enable --now agent
 loginctl enable-linger cliacc
 ```
+(If Java isn't 17 by default on this machine either, see
+[Using a non-default Java](#using-a-non-default-java) -- same mechanism,
+just under `cliacc`'s `~/file-transfer/java.env`.)
+
 There is no Windows Service wrapper -- on Windows, run
 `java -jar agent.jar agent.properties` directly (e.g. as a Scheduled Task
 at logon) -- see [Known limitations](#known-limitations--prototype-scope).

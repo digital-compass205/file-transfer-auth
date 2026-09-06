@@ -8,7 +8,11 @@ After=network.target
 # one-time secret sitting in a config file. Once agent-keystore.p12 exists,
 # no token is needed for this or any future run.
 WorkingDirectory=%h/file-transfer
-ExecStart=/usr/bin/java -jar %h/file-transfer/agent.jar %h/file-transfer/agent.properties
+# See ca-service.service / README "Using a non-default Java" for how to
+# override JAVA_BIN without editing this file.
+Environment=JAVA_BIN=/usr/bin/java
+EnvironmentFile=-%h/file-transfer/java.env
+ExecStart=/bin/sh -c 'exec "${JAVA_BIN}" -jar %h/file-transfer/agent.jar %h/file-transfer/agent.properties'
 Restart=on-failure
 NoNewPrivileges=true
 ProtectSystem=strict
