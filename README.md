@@ -16,8 +16,15 @@ this README is the practical "what is this, how do I build it, how do I run
 it" guide, followed by an appendix that explains, in depth, why this
 approach is secure.
 
+New to certificates, TLS, or public/private keys? Start with
+[`CONCEPTS.md`](CONCEPTS.md) instead — it explains every concept this
+project relies on from first principles, with a full glossary, before this
+README's appendix gets into the specific reasoning behind this project's
+choices.
+
 ## Table of contents
 
+- [New to TLS/certificates? Read CONCEPTS.md first](CONCEPTS.md)
 - [The problem this solves](#the-problem-this-solves)
 - [How it works](#how-it-works)
 - [Repository layout](#repository-layout)
@@ -138,6 +145,7 @@ scripts/           local-demo.sh -- runs the whole system on one machine, and do
 deploy/systemd-user/  systemd --user units: ca-service, file-receiver, the client agent,
                     and a gen-crl service/timer pair that keeps the CRL fresh.
 build.sh           Builds everything with just `javac`/`jar` -- no build tool, no deps.
+CONCEPTS.md        TLS/certificates/PKI explained from first principles, plus a glossary.
 secure-file-transfer-spec-java.md   The detailed design/build specification.
 ```
 
