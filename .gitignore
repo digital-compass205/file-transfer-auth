@@ -4,6 +4,9 @@ build/
 # Claude Code session state -- not part of the project
 .claude/
 
+# Local build/runtime overrides -- see README "Using a non-default Java"
+java.env
+
 # Local runtime artifacts, in case anything is run from the repo root
 *.p12
 *.jsonl

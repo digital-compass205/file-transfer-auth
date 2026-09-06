@@ -16,6 +16,28 @@ set -o pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 BUILD="$ROOT/build"
 
+# Optional override for which JDK builds this project, e.g. on a RHEL 8 box
+# where the `alternatives`-managed default `javac` isn't 17 -- see README
+# "Using a non-default Java". Set JAVA_BIN yourself, or drop a java.env file
+# next to this script containing JAVA_BIN=/path/to/java (same variable name
+# as the systemd units' java.env, but this is a separate file: this one
+# lives in the repo, theirs lives under ~/file-transfer). javac and jar are
+# derived from JAVA_BIN's directory.
+if [ -f "$ROOT/java.env" ]; then
+  set -a
+  # shellcheck disable=SC1091
+  . "$ROOT/java.env"
+  set +a
+fi
+if [ -n "${JAVA_BIN:-}" ]; then
+  JDK_BINDIR="$(dirname "$JAVA_BIN")"
+  JAVAC="$JDK_BINDIR/javac"
+  JAR="$JDK_BINDIR/jar"
+else
+  JAVAC="javac"
+  JAR="jar"
+fi
+
 rm -rf "$BUILD"
 mkdir -p "$BUILD/classes/common" "$BUILD/jars"
 
@@ -34,9 +56,9 @@ compile() {
   # on RHEL 8's Java 17; -encoding UTF-8 keeps the build independent of the
   # building machine's default charset, which is not UTF-8 everywhere.
   if [ -n "$cp" ]; then
-    javac --release 17 -encoding UTF-8 -cp "$cp" -d "$outdir" @"$filelist"
+    "$JAVAC" --release 17 -encoding UTF-8 -cp "$cp" -d "$outdir" @"$filelist"
   else
-    javac --release 17 -encoding UTF-8 -d "$outdir" @"$filelist"
+    "$JAVAC" --release 17 -encoding UTF-8 -d "$outdir" @"$filelist"
   fi
   rm -f "$filelist"
 }
@@ -55,7 +77,7 @@ package_jar() {
   local manifest
   manifest="$(mktemp)"
   printf 'Main-Class: %s\n' "$mainclass" > "$manifest"
-  jar --create --file "$BUILD/jars/$name.jar" --manifest "$manifest" -C "$stage" .
+  "$JAR" --create --file "$BUILD/jars/$name.jar" --manifest "$manifest" -C "$stage" .
   rm -f "$manifest"
   rm -rf "$stage"
 }
