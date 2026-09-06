@@ -24,6 +24,17 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WORK="${1:-/tmp/file-transfer-demo}"
 CA_DIR="$WORK/pki/internal-ca"
 
+# Same override as build.sh -- see README "Using a non-default Java". One
+# java.env at the repo root covers both building and running the demo, so
+# there's nothing extra to create under $WORK.
+if [ -f "$REPO_ROOT/java.env" ]; then
+  set -a
+  # shellcheck disable=SC1091
+  . "$REPO_ROOT/java.env"
+  set +a
+fi
+JAVA_BIN="${JAVA_BIN:-java}"
+
 JAR_AGENT="$REPO_ROOT/build/jars/agent.jar"
 JAR_CA="$REPO_ROOT/build/jars/ca-service.jar"
 JAR_RECV="$REPO_ROOT/build/jars/file-receiver.jar"
@@ -106,15 +117,15 @@ upload.max_bytes=1073741824
 EOF
 
 echo "==> 4. Starting ca-service (:9443) and file-receiver (:8443)"
-java -jar "$JAR_CA" "$WORK/ca-service.properties" > "$WORK/ca-service.out" 2>&1 &
+"$JAVA_BIN" -jar "$JAR_CA" "$WORK/ca-service.properties" > "$WORK/ca-service.out" 2>&1 &
 CA_PID=$!
-java -jar "$JAR_RECV" "$WORK/receiver.properties" > "$WORK/receiver.out" 2>&1 &
+"$JAVA_BIN" -jar "$JAR_RECV" "$WORK/receiver.properties" > "$WORK/receiver.out" 2>&1 &
 RECV_PID=$!
 sleep 2
 cat "$WORK/ca-service.out" "$WORK/receiver.out"
 
 echo "==> 5. Operator issues a one-time enrollment token for 'demo-client'"
-TOKEN=$(java -cp "$JAR_CA" com.filetransfer.ca.IssueTokenCli "$WORK/ca-service.properties" demo-client 24 \
+TOKEN=$("$JAVA_BIN" -cp "$JAR_CA" com.filetransfer.ca.IssueTokenCli "$WORK/ca-service.properties" demo-client 24 \
   | tee /dev/stderr | awk '/^token:/ {print $2}')
 
 echo "==> 6. Client agent enrolls (consumes the token) and starts watching a folder"
@@ -136,7 +147,7 @@ EOF
 # One invocation both enrolls (because a token is given) and then keeps
 # running as the normal watch/upload/renew loop -- this is the agent's
 # real, documented behavior, not demo-only shortcut.
-java -jar "$JAR_AGENT" "$WORK/agent.properties" "$TOKEN" > "$WORK/agent.out" 2>&1 &
+"$JAVA_BIN" -jar "$JAR_AGENT" "$WORK/agent.properties" "$TOKEN" > "$WORK/agent.out" 2>&1 &
 AGENT_PID=$!
 sleep 2
 cat "$WORK/agent.out"
@@ -171,7 +182,7 @@ echo "==> 9. Confirming certificates rotate themselves, keys and all"
 # certificate as due (renew.below_fraction=1.0), which compresses the real
 # renewal path -- new key pair, CSR, mTLS-authenticated /renew, atomic
 # keystore swap -- into something observable in half a minute.
-RENEW_TOKEN=$(java -cp "$JAR_CA" com.filetransfer.ca.IssueTokenCli \
+RENEW_TOKEN=$("$JAVA_BIN" -cp "$JAR_CA" com.filetransfer.ca.IssueTokenCli \
   "$WORK/ca-service.properties" renew-client 24 | awk '/^token:/ {print $2}')
 mkdir -p "$WORK/watched-renew"
 sed -e "s|^client.id=.*|client.id=renew-client|" \
@@ -182,7 +193,7 @@ sed -e "s|^client.id=.*|client.id=renew-client|" \
     -e "s|^renew.check_interval_hours=.*|renew.check_interval_seconds=5\nrenew.below_fraction=1.0|" \
     "$WORK/agent.properties" > "$WORK/agent-renew.properties"
 
-java -jar "$JAR_AGENT" "$WORK/agent-renew.properties" "$RENEW_TOKEN" > "$WORK/agent-renew.out" 2>&1 &
+"$JAVA_BIN" -jar "$JAR_AGENT" "$WORK/agent-renew.properties" "$RENEW_TOKEN" > "$WORK/agent-renew.out" 2>&1 &
 RENEW_PID=$!
 
 FIRST_SERIAL=""
@@ -261,7 +272,7 @@ sed -e "s|^receiver.url=.*|receiver.url=https://127.0.0.1:8443|" \
     -e "s|^log.file=.*|log.file=$WORK/agent-iptest.jsonl|" \
     "$WORK/agent.properties" > "$WORK/agent-iptest.properties"
 
-java -jar "$JAR_AGENT" "$WORK/agent-iptest.properties" > "$WORK/agent-iptest.out" 2>&1 &
+"$JAVA_BIN" -jar "$JAR_AGENT" "$WORK/agent-iptest.properties" > "$WORK/agent-iptest.out" 2>&1 &
 IPTEST_PID=$!
 echo "should not arrive" > "$WORK/watched-iptest/must-not-upload.txt"
 for i in $(seq 1 15); do

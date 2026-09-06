@@ -342,20 +342,24 @@ Two ways to point at it -- pick whichever fits:
   `./build.sh`), then pick the `java-17-openjdk` entry.
 - **Without changing the system default**, set `JAVA_BIN` to the full path
   of the `java` binary from a 17 install. This same variable name covers
-  both places that need it, but they're two separate files:
-  - **For `./build.sh`**: create `java.env` at the repo root (next to
-    `build.sh`) containing one line:
+  every place that needs it, but through two separate files depending on
+  what you're running:
+  - **For `./build.sh` and `scripts/local-demo.sh`** (i.e. everything you'd
+    run straight from a repo clone, including the 2-minute demo): create
+    `java.env` at the repo root (next to `build.sh`) containing one line:
     ```
     JAVA_BIN=/usr/lib/jvm/java-17-openjdk-17.x.x.x-x.el8.x86_64/bin/java
     ```
-    `build.sh` reads this file if present and derives `javac`/`jar` from
-    the same directory -- no need to also set `--config javac`.
-  - **For the systemd units**: create `~/file-transfer/java.env` (in
-    whichever account's `~/file-transfer` -- `servacc` for
-    `ca-service`/`file-receiver`, or `cliacc` for `agent`) with the same
-    `JAVA_BIN=...` line. Each unit reads this file if it's present and runs
-    that Java instead of the default `/usr/bin/java`, with no unit file to
-    edit. Apply it with `systemctl --user daemon-reload && systemctl --user
+    `build.sh` derives `javac`/`jar` from the same directory (no need to
+    also set `--config javac`), and `local-demo.sh` uses `JAVA_BIN` itself
+    for every `java` it launches -- one file covers both.
+  - **For the systemd units** (the production deployment, which doesn't run
+    from a repo clone): create `~/file-transfer/java.env` (in whichever
+    account's `~/file-transfer` -- `servacc` for `ca-service`/
+    `file-receiver`, or `cliacc` for `agent`) with the same `JAVA_BIN=...`
+    line. Each unit reads this file if it's present and runs that Java
+    instead of the default `/usr/bin/java`, with no unit file to edit.
+    Apply it with `systemctl --user daemon-reload && systemctl --user
     restart <unit>`.
 
 ## Enrolling a client
